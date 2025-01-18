@@ -8,8 +8,9 @@ let latestNewsId = null; // Tracks the most recent story's ID to prevent duplica
 async function scrapeAndStoreNews() {
     const browser = await getBrowser();
     const page = await browser.newPage();
-
+    const newStories = [];
     try {
+
         // Navigate to Hacker News
         await page.goto('https://news.ycombinator.com/', { waitUntil: 'domcontentloaded' });
         logger.info("Page loaded successfully")
@@ -20,7 +21,7 @@ async function scrapeAndStoreNews() {
 
             rows.forEach((row) => {
                 const id = row.getAttribute('id');
-                const titleElement = row.querySelector('a');
+                const titleElement = row.querySelector('span.titleline a');
                 const title = titleElement ? titleElement.innerText : 'No Title';
                 const url = titleElement ? titleElement.href : 'No URL';
 
@@ -63,7 +64,6 @@ async function scrapeAndStoreNews() {
         });
 
         // Filter new stories by comparing against the latestNewsId
-        const newStories = [];
         for (const story of stories) {
             if (story.id === latestNewsId) break; // Stop if we've reached the latest known story
 
@@ -79,8 +79,6 @@ async function scrapeAndStoreNews() {
             // Update the latestNewsId to the most recent story
             latestNewsId = newStories[0].id;
             // Log and broadcast updates
-
-            broadcastUpdates(newStories);       // Send new stories to WebSocket clients
             logger.info(`Inserted ${newStories.length} new stories into the database.`);
 
             await storeNewNews(newStories);     // Store new stories in the database
@@ -89,7 +87,8 @@ async function scrapeAndStoreNews() {
         console.error('Error during scraping:', error);
     } finally {
         await browser.close();
+        return newStories;
     }
 }
 
-module.exports = scrapeAndStoreNews;
+module.exports = { scrapeAndStoreNews };

@@ -1,3 +1,5 @@
+const prisma = require("../config/prismaClient");
+
 // Function to get the count of news published in the last N minutes
 async function getRecentNewsCount(minutes) {
     const now = new Date();
@@ -31,6 +33,7 @@ async function storeNewNews(newStories) {
                 publishDate: story.publishDate,
             },
         });
+        console.log(`Stored story with ID ${story.id} in the database.`);
     }
 }
 

@@ -1,56 +1,65 @@
-const express = require('express');
-const { WebSocketExpress } = require('websocket-express');
+const { WebSocketExpress, Router } = require('websocket-express');
 const prisma = require('./config/prismaClient');
 const logger = require('./utils/logger');
 const { scrapeAndStoreNews } = require('./services/scraper');
 const { getRecentNewsCount } = require('./utils/database');
+const { broadcastUpdates } = require('./utils/websocket');
 
-const app = express();
-const wss = new WebSocketExpress(app);
+const app = new WebSocketExpress();
+const router = new Router();
 
+// Maintain a list of connected clients
 let connectedClients = [];
 
-
-wss.on('connection', async (socket) => {
+router.ws('/news', async (req, res) => {
+    const ws = await res.accept();
     console.log('WebSocket client connected');
-    connectedClients.push(socket);
+    connectedClients.push(ws);
 
-    // On a new connection, send the count of news published in the last 5 minutes
     try {
         const count = await getRecentNewsCount(5);
-        socket.send(JSON.stringify({ message: `News count from the last 5 minutes: ${count}` }));
+        ws.send(JSON.stringify({ message: `News count from the last 5 minutes: ${count}` }));
     } catch (error) {
-        console.error('Error fetching recent news count:', error);
-        socket.send(JSON.stringify({ error: 'Failed to fetch recent news count.' }));
+        logger.error('Error fetching recent news count:', error);
+        ws.send(JSON.stringify({ error: 'Failed to fetch recent news count.' }));
     }
 
-    socket.on('close', () => {
+    ws.on('close', () => {
         console.log('WebSocket client disconnected');
-        connectedClients = connectedClients.filter(client => client !== socket);
+        connectedClients = connectedClients.filter(client => client !== ws);
     });
 });
 
+setInterval(async () => {
+    try {
+        const newUpdates = await scrapeAndStoreNews();
+        // if (newUpdates && newUpdates.length > 0) {
+        //     broadcastUpdates(connectedClients, { updates: newUpdates });
+        // }
+    } catch (error) {
+        logger.error('Error broadcasting updates:', error);
+    }
+}, 60 * 1000); // Broadcast every 60 seconds
+
+// Attach the router
+app.use(router);
+
+// Start the server
 async function startServer() {
     try {
         console.log('Connecting to MySQL...');
-        await prisma.$connect(); // Attempt to connect to the database
+        await prisma.$connect();
         console.log('Connected to MySQL successfully.');
 
-        // Start the server
         const PORT = process.env.PORT || 3000;
-        app.listen(PORT, () => {
-            logger.log(`Server running at port ${PORT}`);
-
-            setInterval(async () => {
-                try {
-                    await scrapeAndStoreNews();
-                } catch (error) {
-                    logger.error('Error scraping and storing news:', error);
-                }
-            }, 60 * 1000); // Scrape every 60 seconds
+        const server = app.createServer();
+        server.listen(PORT, () => {
+            logger.info(`Server running at port ${PORT}`);
         });
     } catch (error) {
-        console.error('Failed to connect to MySQL:', error);
+        logger.error('Failed to connect to MySQL:', error);
         process.exit(1); // Exit the process if the database connection fails
     }
 }
+
+module.exports = startServer;
