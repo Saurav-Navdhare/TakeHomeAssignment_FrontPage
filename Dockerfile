@@ -1,34 +1,45 @@
-FROM node:18-bullseye
+# Stage 1: Build
+FROM node:18-bullseye-slim AS builder
 
 WORKDIR /app
 
-# Copy package files to install dependencies
-COPY package.json package-lock.json ./
-
+# Build-time argument for environment
 ARG NODE_ENV=production
 ENV NODE_ENV=$NODE_ENV
 
-# Set the database URL environment variable
-ARG DATABASE_URL
-ENV DATABASE_URL=$DATABASE_URL
+# Copy package files and install dependencies
+COPY package.json package-lock.json ./
 
 RUN if [ "$NODE_ENV" = "production" ]; then \
   npm ci --only=production; \
-    else \
+else \
   npm install; \
-    fi
-    
-RUN npx playwright install
-RUN npx playwright install-deps
+fi
 
-COPY . .
+# Install Playwright binaries and dependencies
+RUN npx playwright install && npx playwright install-deps
 
+# Generate Prisma client
+COPY ./prisma ./prisma
 RUN npx prisma generate
 
+# Copy application code
+COPY . .
+
+# Stage 2: Runtime
+FROM node:18-bullseye-slim
+
+WORKDIR /app
+
+# Copy only necessary files from the build stage
+COPY --from=builder /app /app
+
+# Copy the runtime script and make it executable
 COPY run.sh /usr/local/bin/run.sh
 RUN chmod +x /usr/local/bin/run.sh
 
-
+# Expose the application port
 EXPOSE 3000
 
+# Start the application
 CMD ["sh", "/usr/local/bin/run.sh"]
