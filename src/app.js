@@ -1,3 +1,5 @@
+const path = require('path');
+const favicon = require('serve-favicon');
 const { WebSocketExpress, Router } = require('websocket-express');
 const prisma = require('./config/prismaClient');
 const logger = require('./utils/logger');
@@ -7,6 +9,8 @@ const { broadcastUpdates } = require('./utils/websocket');
 
 const app = new WebSocketExpress();
 const router = new Router();
+
+app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 
 // Maintain a list of connected clients
 let connectedClients = [];
@@ -33,9 +37,9 @@ router.ws('/news', async (req, res) => {
 setInterval(async () => {
     try {
         const newUpdates = await scrapeAndStoreNews();
-        // if (newUpdates && newUpdates.length > 0) {
-        //     broadcastUpdates(connectedClients, { updates: newUpdates });
-        // }
+        if (newUpdates && newUpdates.length > 0) {
+            broadcastUpdates(connectedClients, { updates: newUpdates });
+        }
     } catch (error) {
         logger.error('Error broadcasting updates:', error);
     }
@@ -43,6 +47,10 @@ setInterval(async () => {
 
 // Attach the router
 app.use(router);
+
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'index.html'));
+});
 
 // Start the server
 async function startServer() {
@@ -58,7 +66,7 @@ async function startServer() {
         });
     } catch (error) {
         logger.error('Failed to connect to MySQL:', error);
-        process.exit(1); // Exit the process if the database connection fails
+        process.exit(1);
     }
 }
 

@@ -33,7 +33,6 @@ async function storeNewNews(newStories) {
                 publishDate: story.publishDate,
             },
         });
-        console.log(`Stored story with ID ${story.id} in the database.`);
     }
 }
 
