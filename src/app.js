@@ -27,6 +27,7 @@ router.ws('/news', async (req, res) => {
     console.log('WebSocket client connected');
     connectedClients.push(ws);
     websocket_active_connections.inc();
+
     try {
         const count = await getRecentNewsCount(5);
         ws.send(JSON.stringify({ message: `News count from the last 5 minutes: ${count}` }));
@@ -45,6 +46,8 @@ router.ws('/news', async (req, res) => {
 
 setInterval(async () => {
     try {
+        console.log("scraping started")
+
         const newUpdates = await scrapeAndStoreNews();
         if (newUpdates && newUpdates.length > 0) {
             broadcastUpdates(connectedClients, { updates: newUpdates });
@@ -53,7 +56,10 @@ setInterval(async () => {
     } catch (error) {
         logger.error('Error broadcasting updates:', error);
     }
-}, 60 * 1000); // Broadcast every 60 seconds
+    finally {
+        console.log("scraping ended")
+    }
+}, 30 * 1000); // Broadcast every 60 seconds
 
 app.use(router);
 
