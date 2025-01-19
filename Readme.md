@@ -270,6 +270,11 @@ If you want to run the app locally and pass the database URL directly, you can f
     http://localhost:8080/metrics
     ```
 
+## Known Behavior
+- **Initial Connection Behavior**: On the very first WebSocket connection, if the scraper has not yet fetched data, all stories fetched during the first scrape will be pushed to the WebSocket client and displayed on the homepage. This happens because no previously known stories exist. From the second scrape onwards, only new stories will be pushed to the client.
+
+    If and only if a user connects during the first scrape, this behavior will occur. Users connecting from the second scrape onwards will only receive new stories that were fetched after their connection.
+
 ## Screenshots
 
 Below are some screenshots showing the app in action:
