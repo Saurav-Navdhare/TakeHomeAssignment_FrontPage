@@ -45,7 +45,6 @@ setInterval(async () => {
     }
 }, 60 * 1000); // Broadcast every 60 seconds
 
-// Attach the router
 app.use(router);
 
 app.get("/", (req, res) => {

@@ -1,5 +1,4 @@
 const getBrowser = require('../config/playwright');
-const { broadcastUpdates } = require('../utils/websocket');
 const logger = require('../utils/logger');
 const { storeNewNews } = require("../utils/database")
 
@@ -25,7 +24,7 @@ async function scrapeAndStoreNews() {
                 const title = titleElement ? titleElement.innerText : 'No Title';
                 const url = titleElement ? titleElement.href : 'No URL';
 
-                // Get the next row to extract the publish date
+                // Find the publish date of the story
                 const nextRow = row.nextElementSibling;
                 const publishDateSpan = nextRow ? nextRow.querySelector('td span.age') : null;
                 let publishDate = publishDateSpan ? publishDateSpan.getAttribute('title') : null;
@@ -35,8 +34,6 @@ async function scrapeAndStoreNews() {
 
                     // Convert the timestamp to a Date object
                     const date = new Date(parseInt(timestamp) * 1000); // Convert seconds to milliseconds
-
-                    // Convert to ISO string or use any other format suitable for your DB
                     publishDate = date.toISOString();
                 }
 
@@ -53,15 +50,7 @@ async function scrapeAndStoreNews() {
 
         if (!stories || !stories.length) return;
 
-        // Log the scraped stories
         console.log(`Scraped ${stories.length} new stories:`);
-        stories.forEach(story => {
-            console.log(`ID: ${story.id}`);
-            console.log(`Title: ${story.title}`);
-            console.log(`URL: ${story.url}`);
-            console.log(`Publish Date: ${story.publishDate}`);
-            console.log('---');
-        });
 
         // Filter new stories by comparing against the latestNewsId
         for (const story of stories) {
@@ -76,9 +65,7 @@ async function scrapeAndStoreNews() {
         }
 
         if (newStories.length > 0) {
-            // Update the latestNewsId to the most recent story
             latestNewsId = newStories[0].id;
-            // Log and broadcast updates
             logger.info(`Inserted ${newStories.length} new stories into the database.`);
 
             await storeNewNews(newStories);     // Store new stories in the database

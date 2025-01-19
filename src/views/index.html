@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Real-Time Hacker News</title>
+    <style>
+      #news-list {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      #news-list .news-item {
+        margin-bottom: 15px;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background-color: #f9f9f9;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s, box-shadow 0.3s;
+      }
+
+      #news-list .news-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      #news-list .news-title {
+        font-size: 18px;
+        font-weight: bold;
+        color: #0073e6;
+        text-decoration: none;
+      }
+
+      #news-list .news-title:hover {
+        color: #005bb5;
+        text-decoration: underline;
+      }
+
+      #news-list .news-meta {
+        margin-top: 10px;
+        font-size: 14px;
+        color: #555;
+      }
+
+      #news-list .news-meta .news-date {
+        display: inline-block;
+        margin-right: 10px;
+      }
+
+      #news-list .news-meta .news-id {
+        display: inline-block;
+        color: #888;
+      }
+
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        color: #333;
+      }
+      h1 {
+        background: #ff6600;
+        color: #fff;
+        padding: 10px;
+        text-align: center;
+      }
+      #news-container {
+        margin: 20px auto;
+        padding: 10px;
+        width: 80%;
+        max-width: 600px;
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+      }
+      .news-item {
+        margin: 10px 0;
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+        transition: opacity 0.5s ease-in-out;
+      }
+      .news-item:last-child {
+        border-bottom: none;
+      }
+      .title {
+        font-weight: bold;
+      }
+      .url {
+        color: #007bff;
+        text-decoration: none;
+      }
+      .url:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Real-Time Hacker News Updates</h1>
+    <div id="news-container">
+      <h3 id="recent-stories">
+        <span id="news-count"></span>
+      </h3>
+      <div id="updates-container">
+        <h3>Recent News Updates</h3>
+        <ul id="news-list" style="list-style-type: none; padding: 0">
+          <!-- Updates will be dynamically inserted here -->
+        </ul>
+      </div>
+    </div>
+
+    <script>
+      const ws = new WebSocket("ws://localhost:3000/news"); // Updated WebSocket URL
+
+      const newsCountElem = document.getElementById("news-count");
+      const newsListElem = document.getElementById("news-list");
+      const recentStoriesElem = document.getElementById("recent-stories");
+
+      // Helper function to fade out and remove an element
+      function fadeOutAndRemove(element, delay) {
+        setTimeout(() => {
+          element.style.opacity = "0";
+          setTimeout(() => {
+            element.remove();
+          }, 500); // Matches the transition duration in CSS
+        }, delay);
+      }
+
+      // On WebSocket connection
+      ws.onopen = () => {
+        console.log("WebSocket successfully connected!");
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log("WebSocket message received:", data);
+
+          if (data.message) {
+            newsCountElem.textContent = data.message;
+            newsCountElem.style.color = "green";
+            fadeOutAndRemove(newsCountElem, 10000);
+          }
+
+          // Ensure we have updates to display
+          if (data.updates && Array.isArray(data.updates)) {
+            data.updates.forEach((update) => {
+              // Destructure update object
+              const { id, title, url, publishDate } = update;
+
+              // Create a list item for each update
+              const newsItem = document.createElement("li");
+              newsItem.className = "news-item";
+
+              // Generate the inner content
+              newsItem.innerHTML = `
+          <a href="${url}" target="_blank" class="news-title">${title}</a>
+          <div class="news-meta">
+            <span class="news-date">${new Date(
+              publishDate
+            ).toLocaleString()}</span>
+            <span class="news-id">ID: ${id}</span>
+          </div>
+        `;
+
+              // Add the news item to the list
+              newsListElem.prepend(newsItem);
+
+              // Apply a fade-in effect for new items
+              newsItem.style.opacity = "0";
+              setTimeout(() => {
+                newsItem.style.opacity = "1";
+                newsItem.style.transition = "opacity 0.5s ease-in-out";
+              }, 0);
+            });
+          }
+        } catch (error) {
+          console.error("Error processing WebSocket message:", error);
+        }
+      };
+
+      // Handle WebSocket errors
+      ws.onerror = (error) => {
+        console.error("WebSocket error:", error);
+      };
+
+      // Handle WebSocket disconnection
+      ws.onclose = () => {
+        console.warn("WebSocket connection closed.");
+      };
+    </script>
+  </body>
+</html>

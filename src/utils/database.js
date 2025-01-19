@@ -17,6 +17,7 @@ async function getRecentNewsCount(minutes) {
     return count;
 }
 
+// Function to store new news stories in the database
 async function storeNewNews(newStories) {
     for (const story of newStories) {
         await prisma.news.upsert({      // if id is already in database
