@@ -2,7 +2,7 @@
 
 ## Problem Statement
 
-The goal of this project was to build a **News Aggregator** application that collects news articles from Hacker News, organizes them, and provides them in a structured format to the user. Initially, one approach we considered was using an **RSS feed** from the Y Combinator (YC) website to collect articles. However, since this was a project assignment, I decided to implement a more custom approach where I **scraped the YC website** to gather news articles dynamically.
+The goal of this project was to build a **News Aggregator** application that collects news articles from Hacker News, organizes them, and provides them in a structured format to the user. Initially, one approach we considered was using an **RSS feed** from the Y Combinator (YC) website to collect articles. **However, since this was a project assignment**, I decided to implement a more custom approach where I **scraped the YC website** to gather news articles dynamically.
 
 This project demonstrates my ability to:
 
