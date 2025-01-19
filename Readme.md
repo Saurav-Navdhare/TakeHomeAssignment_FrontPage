@@ -2,13 +2,16 @@
 
 ## Problem Statement
 
-The goal of this project was to build a **News Aggregator** application that collects news articles from various sources, organizes them, and provides them in a structured format to the user. In this case, we focused on aggregating news articles related to technology startups and innovations. Initially, one approach we considered was using an **RSS feed** from the Y Combinator (YC) website to collect articles. However, since this was a project assignment, I decided to implement a more custom approach where I **scraped the YC website** to gather news articles dynamically.
+The goal of this project was to build a **News Aggregator** application that collects news articles from Hacker News, organizes them, and provides them in a structured format to the user. Initially, one approach we considered was using an **RSS feed** from the Y Combinator (YC) website to collect articles. However, since this was a project assignment, I decided to implement a more custom approach where I **scraped the YC website** to gather news articles dynamically.
 
 This project demonstrates my ability to:
 
-- Web scrape data from [Hacker News](https://news.ycombinator.com/)
-- Structure and store data in a database
-- Use Docker to containerize the application for production
+- Scrape data from [Hacker News](https://news.ycombinator.com/)
+- Organize and store data in a MySQL database
+- Implement WebSocket for real-time updates
+- Collect and expose metrics for monitoring
+- Implement comprehensive logging
+- Containerize the application using Docker for production
 
 ## Approach
 

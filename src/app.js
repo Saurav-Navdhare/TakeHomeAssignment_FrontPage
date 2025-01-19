@@ -7,6 +7,7 @@ const { scrapeAndStoreNews } = require('./services/scraper');
 const { getRecentNewsCount } = require('./utils/database');
 const { broadcastUpdates } = require('./utils/websocket');
 const { register, websocket_messages_sent, websocket_active_connections } = require('./services/metrics');
+require('dotenv').config();
 
 const app = new WebSocketExpress();
 const router = new Router();
@@ -67,11 +68,12 @@ async function startServer() {
         await prisma.$connect();
         console.log('Connected to MySQL successfully.');
 
-        const PORT = process.env.PORT || 3000;
+        const PORT = process.env.PORT || 8080;
         const server = app.createServer();
         server.listen(PORT, () => {
             logger.info(`Server running at port ${PORT}`);
-            logger.info('Metrics available at http://localhost:3000/metrics');
+            console.log(`Server running at port ${PORT}`);
+            logger.info('Metrics available at /metrics');
         });
     } catch (error) {
         logger.error('Failed to connect to MySQL:', error);
