@@ -1,4 +1,6 @@
 const prisma = require("../config/prismaClient");
+const { db_queries_total, db_connection_errors } = require('../services/metrics');
+
 
 // Function to get the count of news published in the last N minutes
 async function getRecentNewsCount(minutes) {
@@ -20,20 +22,26 @@ async function getRecentNewsCount(minutes) {
 // Function to store new news stories in the database
 async function storeNewNews(newStories) {
     for (const story of newStories) {
-        await prisma.news.upsert({      // if id is already in database
-            where: { id: story.id },    // update it as it re-occurred at top meaning it is updated
-            update: {
-                title: story.title,
-                url: story.url,
-                publishDate: story.publishDate,
-            },
-            create: {                    // else create a new entry in database
-                id: story.id,
-                title: story.title,
-                url: story.url,
-                publishDate: story.publishDate,
-            },
-        });
+        try {
+            db_queries_total.inc();
+            await prisma.news.upsert({      // if id is already in database
+                where: { id: story.id },    // update it as it re-occurred at top meaning it is updated
+                update: {
+                    title: story.title,
+                    url: story.url,
+                    publishDate: story.publishDate,
+                },
+                create: {                    // else create a new entry in database
+                    id: story.id,
+                    title: story.title,
+                    url: story.url,
+                    publishDate: story.publishDate,
+                },
+            });
+        } catch (error) {
+            db_connection_errors.inc();
+            console.error('Error storing news story:', error);
+        }
     }
 }
 

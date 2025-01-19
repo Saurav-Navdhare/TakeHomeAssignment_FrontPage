@@ -6,11 +6,17 @@ const logger = require('./utils/logger');
 const { scrapeAndStoreNews } = require('./services/scraper');
 const { getRecentNewsCount } = require('./utils/database');
 const { broadcastUpdates } = require('./utils/websocket');
+const { register, websocket_messages_sent, websocket_active_connections } = require('./services/metrics');
 
 const app = new WebSocketExpress();
 const router = new Router();
 
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+
+app.get('/metrics', async (req, res) => {
+    res.set('Content-Type', register.contentType);
+    res.end(await register.metrics());
+});
 
 // Maintain a list of connected clients
 let connectedClients = [];
@@ -19,10 +25,11 @@ router.ws('/news', async (req, res) => {
     const ws = await res.accept();
     console.log('WebSocket client connected');
     connectedClients.push(ws);
-
+    websocket_active_connections.inc();
     try {
         const count = await getRecentNewsCount(5);
         ws.send(JSON.stringify({ message: `News count from the last 5 minutes: ${count}` }));
+        websocket_messages_sent.inc();
     } catch (error) {
         logger.error('Error fetching recent news count:', error);
         ws.send(JSON.stringify({ error: 'Failed to fetch recent news count.' }));
@@ -31,6 +38,7 @@ router.ws('/news', async (req, res) => {
     ws.on('close', () => {
         console.log('WebSocket client disconnected');
         connectedClients = connectedClients.filter(client => client !== ws);
+        websocket_active_connections.dec();
     });
 });
 
@@ -39,6 +47,7 @@ setInterval(async () => {
         const newUpdates = await scrapeAndStoreNews();
         if (newUpdates && newUpdates.length > 0) {
             broadcastUpdates(connectedClients, { updates: newUpdates });
+            websocket_messages_sent.inc();
         }
     } catch (error) {
         logger.error('Error broadcasting updates:', error);
@@ -62,6 +71,7 @@ async function startServer() {
         const server = app.createServer();
         server.listen(PORT, () => {
             logger.info(`Server running at port ${PORT}`);
+            logger.info('Metrics available at http://localhost:3000/metrics');
         });
     } catch (error) {
         logger.error('Failed to connect to MySQL:', error);

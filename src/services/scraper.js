@@ -1,6 +1,7 @@
 const getBrowser = require('../config/playwright');
 const logger = require('../utils/logger');
 const { storeNewNews } = require("../utils/database")
+const { successful_scrapes, failed_scrapes, news_processed } = require('./metrics');
 
 let latestNewsId = null; // Tracks the most recent story's ID to prevent duplicates
 
@@ -52,7 +53,6 @@ async function scrapeAndStoreNews() {
 
         console.log(`Scraped ${stories.length} new stories:`);
 
-        // Filter new stories by comparing against the latestNewsId
         for (const story of stories) {
             if (story.id === latestNewsId) break; // Stop if we've reached the latest known story
 
@@ -65,12 +65,15 @@ async function scrapeAndStoreNews() {
         }
 
         if (newStories.length > 0) {
+            news_processed.set(newStories.length);
             latestNewsId = newStories[0].id;
             logger.info(`Inserted ${newStories.length} new stories into the database.`);
 
-            await storeNewNews(newStories);     // Store new stories in the database
+            await storeNewNews(newStories);
         }
+        successful_scrapes.inc();
     } catch (error) {
+        failed_scrapes.inc();
         console.error('Error during scraping:', error);
     } finally {
         await browser.close();
