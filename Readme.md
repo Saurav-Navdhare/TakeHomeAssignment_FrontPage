@@ -291,6 +291,9 @@ Below are some screenshots showing the app in action:
 - Metrics
     ![App Screenshot 3](./screenshots/Screenshot3.png)
 
+- Prometheus
+    ![Prometheus Screenshot](./screenshots/Prometheus.png)
+
 - Grafana
     ![App Screenshot 4](./screenshots/Screenshot4.png)
 
